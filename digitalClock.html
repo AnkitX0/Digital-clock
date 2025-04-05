@@ -10,6 +10,7 @@
       box-sizing: border-box;
     }
     
+       
     body {
       margin: 0;
       padding: 0;
@@ -22,7 +23,6 @@
       font-family: 'Orbitron', sans-serif;
       color: #fff;
     }
-
     .clock-container {
       position: relative;
       width: 300px;
@@ -40,6 +40,11 @@
       left: 50%;
       transform-origin: bottom;
       border-radius: 6px;
+      transition: transform 0.05s ease-out;
+    }
+
+    .hand.second {
+      transition: none;
     }
 
     .hour {
@@ -76,14 +81,16 @@
     }
 
     .digital-time {
-      font-size: 2rem;
+      font-size: 2.5rem;
       text-shadow: 0 0 10px #ff00cc, 0 0 20px #00f2fe;
       letter-spacing: 3px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px 20px;
+      border-radius: 10px;
     }
   </style>
 </head>
 <body>
-
   <div class="clock-container">
     <div class="hand hour" id="hour-hand"></div>
     <div class="hand minute" id="minute-hand"></div>
@@ -94,27 +101,34 @@
   <div class="digital-time" id="digital-clock">00:00:00 AM</div>
 
   <script>
+    let lastTime = '';
+
     function updateClock() {
       const now = new Date();
       const seconds = now.getSeconds();
       const minutes = now.getMinutes();
       const hours = now.getHours();
 
-      // Rotation angles
       const secondDeg = seconds * 6;
       const minuteDeg = minutes * 6 + seconds * 0.1;
       const hourDeg = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
 
-      // Apply rotation
-      document.getElementById('second-hand').style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
-      document.getElementById('minute-hand').style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
-      document.getElementById('hour-hand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+      const secondHand = document.getElementById('second-hand');
+      const minuteHand = document.getElementById('minute-hand');
+      const hourHand = document.getElementById('hour-hand');
+      
+      secondHand.style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+      minuteHand.style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+      hourHand.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
 
-      // Digital format
       const hour12 = hours % 12 || 12;
       const ampm = hours >= 12 ? "PM" : "AM";
       const digitalTime = `${hour12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`;
-      document.getElementById('digital-clock').textContent = digitalTime;
+
+      if (digitalTime !== lastTime) {
+        document.getElementById('digital-clock').textContent = digitalTime;
+        lastTime = digitalTime;
+      }
     }
 
     setInterval(updateClock, 1000);
