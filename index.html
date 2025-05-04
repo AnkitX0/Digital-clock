@@ -3,136 +3,188 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hybrid Clock - Analog + Digital</title>
+  <title>Hybrid Clock - Dynamic</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.7), 0 0 30px rgba(0, 242, 254, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(0, 255, 0, 0.9), 0 0 50px rgba(0, 242, 254, 0.7); }
+      100% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.7), 0 0 30px rgba(0, 242, 254, 0.5); }
     }
-    
-       
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Orbitron', sans-serif;
-      color: #fff;
+    @keyframes rotateShapes {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    .clock-container {
+    @keyframes markerPulse {
+      0% { text-shadow: 0 0 5px #ffffff; }
+      50% { text-shadow: 0 0 15px #ffffff, 0 0 25px #00f2fe; }
+      100% { text-shadow: 0 0 5px #ffffff; }
+    }
+    .animated-bg {
+      background: linear-gradient(135deg, #1e1e4a, #4a3b8c, #2e2e5e);
       position: relative;
-      width: 300px;
-      height: 300px;
-      border: 10px solid #fff;
-      border-radius: 50%;
-      background: radial-gradient(circle, #111 60%, #222);
-      box-shadow: 0 0 30px rgba(255, 0, 200, 0.4);
-      margin-bottom: 30px;
+      overflow: hidden;
     }
-
-    .hand {
+    .animated-bg::before {
+      content: '';
       position: absolute;
-      bottom: 50%;
-      left: 50%;
-      transform-origin: bottom;
-      border-radius: 6px;
-      transition: transform 0.05s ease-out;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(255, 0, 204, 0.3), transparent);
+      top: 10%;
+      left: 10%;
+      transform: rotate(0deg);
+      animation: rotateShapes 25s linear infinite;
     }
-
-    .hand.second {
-      transition: none;
-    }
-
-    .hour {
-      width: 6px;
-      height: 70px;
-      background: #ff00cc;
-      z-index: 3;
-    }
-
-    .minute {
-      width: 4px;
-      height: 100px;
-      background: #00f2fe;
-      z-index: 2;
-    }
-
-    .second {
-      width: 2px;
-      height: 120px;
-      background: #ffffff;
-      z-index: 1;
-    }
-
-    .center-dot {
+    .animated-bg::after {
+      content: '';
       position: absolute;
-      width: 12px;
-      height: 12px;
-      background: #fff;
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 5;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(0, 242, 254, 0.3), transparent);
+      bottom: 10%;
+      right: 10%;
+      transform: rotate(0deg);
+      animation: rotateShapes 35s linear infinite reverse;
     }
-
-    .digital-time {
-      font-size: 2.5rem;
-      text-shadow: 0 0 10px #ff00cc, 0 0 20px #00f2fe;
-      letter-spacing: 3px;
-      background: rgba(0, 0, 0, 0.2);
-      padding: 10px 20px;
-      border-radius: 10px;
+    .pulsating-border {
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+    .text-shadow-glow {
+      text-shadow: 0 0 8px #ff00cc, 0 0 15px #00f2fe;
+    }
+    .marker {
+      animation: markerPulse 2s ease-in-out infinite;
+    }
+    .hand-glow {
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
     }
   </style>
 </head>
 <body>
-  <div class="clock-container">
-    <div class="hand hour" id="hour-hand"></div>
-    <div class="hand minute" id="minute-hand"></div>
-    <div class="hand second" id="second-hand"></div>
-    <div class="center-dot"></div>
-  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  <div class="digital-time" id="digital-clock">00:00:00 AM</div>
+    function Clock() {
+      const [time, setTime] = useState(new Date());
+      const [location, setLocation] = useState('Fetching location...');
+      const [timeZone, setTimeZone] = useState('');
+      const [tickTock, setTickTock] = useState(true);
 
-  <script>
-    let lastTime = '';
+      useEffect(() => {
+        fetch('https://ipapi.co/json/')
+          .then((response) => response.json())
+          .then((data) => {
+            setLocation(`${data.city}, ${data.country_name}`);
+            setTimeZone(data.timezone);
+          })
+          .catch(() => setLocation('Location unavailable'));
+      }, []);
 
-    function updateClock() {
-      const now = new Date();
-      const seconds = now.getSeconds();
-      const minutes = now.getMinutes();
-      const hours = now.getHours();
+      useEffect(() => {
+        const interval = setInterval(() => {
+          const now = new Date();
+          setTime(timeZone ? new Date(now.toLocaleString('en-US', { timeZone })) : now);
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [timeZone]);
 
-      const secondDeg = seconds * 6;
-      const minuteDeg = minutes * 6 + seconds * 0.1;
-      const hourDeg = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
+      useEffect(() => {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const playTickTock = () => {
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(tickTock ? 600 : 500, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.start();
+          setTimeout(() => oscillator.stop(), 100);
+          setTickTock(!tickTock);
+        };
+        const tickInterval = setInterval(playTickTock, 500);
+        return () => {
+          clearInterval(tickInterval);
+          audioCtx.close();
+        };
+      }, [tickTock]);
 
-      const secondHand = document.getElementById('second-hand');
-      const minuteHand = document.getElementById('minute-hand');
-      const hourHand = document.getElementById('hour-hand');
-      
-      secondHand.style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
-      minuteHand.style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
-      hourHand.style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+      const secondDeg = time.getSeconds() * 6;
+      const minuteDeg = time.getMinutes() * 6 + time.getSeconds() * 0.1;
+      const hourDeg = ((time.getHours() % 12) / 12) * 360 + (time.getMinutes() / 60) * 30;
 
-      const hour12 = hours % 12 || 12;
-      const ampm = hours >= 12 ? "PM" : "AM";
-      const digitalTime = `${hour12.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`;
+      const hour12 = time.getHours() % 12 || 12;
+      const ampm = time.getHours() >= 12 ? 'PM' : 'AM';
+      const digitalTime = `${hour12.toString().padStart(2, '0')}:${time
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')} ${ampm}`;
 
-      if (digitalTime !== lastTime) {
-        document.getElementById('digital-clock').textContent = digitalTime;
-        lastTime = digitalTime;
-      }
+      const borderColor = `hsl(${time.getSeconds() * 6}, 100%, 70%)`;
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center animated-bg">
+          <div
+            className="relative w-80 h-80 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-white border-8 pulsating-border"
+            style={{ borderColor }}
+          >
+            {/* Numeric Markers */}
+            <div
+              className="absolute text-gray-800 text-lg font-orbitron marker"
+              style={{ top: '10px', left: '50%', transform: 'translateX(-50%)' }}
+            >
+              12
+            </div>
+            <div
+              className="absolute text-gray-800 text-lg font-orbitron marker"
+              style={{ bottom: '10px', left: '50%', transform: 'translateX(-50%)' }}
+            >
+              6
+            </div>
+            <div
+              className="absolute text-gray-800 text-lg font-orbitron marker"
+              style={{ right: '10px', top: '50%', transform: 'translateY(-50%)' }}
+            >
+              3
+            </div>
+            <div
+              className="absolute text-gray-800 text-lg font-orbitron marker"
+              style={{ left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+            >
+              9
+            </div>
+            {/* Clock Hands */}
+            <div
+              className="absolute w-2 h-20 bg-red-600 origin-bottom rounded-lg hand-glow z-30"
+              style={{ transform: `translate(-50%, 0) rotate(${hourDeg}deg)`, left: '50%', bottom: '50%' }}
+            ></div>
+            <div
+              className="absolute w-1.5 h-28 bg-blue-500 origin-bottom rounded-lg hand-glow z-20"
+              style={{ transform: `translate(-50%, 0) rotate(${minuteDeg}deg)`, left: '50%', bottom: '50%' }}
+            ></div>
+            <div
+              className="absolute w-1 h-36 bg-white origin-bottom rounded-lg hand-glow z-10"
+              style={{ transform: `translate(-50%, 0) rotate(${secondDeg}deg)`, left: '50%', bottom: '50%' }}
+            ></div>
+            <div className="absolute w-4 h-4 rounded-full bg-gray-800 z-40" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}></div>
+          </div>
+          <div className="mt-8 text-4xl font-orbitron tracking-wider text-white text-shadow-glow">
+            {digitalTime}
+          </div>
+          <div className="mt-4 text-lg font-orbitron text-white text-shadow-glow">
+            {location}
+          </div>
+        </div>
+      );
     }
 
-    setInterval(updateClock, 1000);
-    updateClock();
+    ReactDOM.render(<Clock />, document.getElementById('root'));
   </script>
 </body>
 </html>
